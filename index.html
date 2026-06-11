@@ -934,11 +934,11 @@ function editarAusencia(id) {
           <option value="si" ${a.generaMovimiento?'selected':''}>Sí</option>
         </select>
       </div>
-      <div class="field" id="e-field-exp">
+      <div class="field" id="e-field-exp" style="display:${a.generaMovimiento?'flex':'none'}">
         <label>Expediente</label>
         <input type="text" id="e-expediente" value="${a.expediente||''}">
       </div>
-      <div class="field">
+      <div class="field" id="e-field-pago" style="display:${a.generaMovimiento?'flex':'none'}">
         <label>Forma de pago</label>
         <select id="e-pago-tipo">
           <option value="" ${!a.pagoTipo?'selected':''}>— Pendiente —</option>
@@ -946,7 +946,7 @@ function editarAusencia(id) {
           <option ${a.pagoTipo==='Transferencia'?'selected':''}>Transferencia</option>
         </select>
       </div>
-      <div class="field" id="e-field-tramite">
+      <div class="field" id="e-field-tramite" style="display:${a.generaMovimiento?'flex':'none'}">
         <label>Estado trámite (La Plata)</label>
         <select id="e-tramite-ok" onchange="toggleEditReclamo()">
           <option value="" ${!a.tramiteOk?'selected':''}>— Pendiente —</option>
@@ -1011,9 +1011,10 @@ function editarAusencia(id) {
 
 function toggleEditMov() {
   const on = document.getElementById('e-genera-mov').value === 'si';
-  ['e-field-exp','e-field-tramite'].forEach(id => {
+  ['e-field-exp','e-field-pago','e-field-tramite'].forEach(id => {
     document.getElementById(id).style.display = on ? 'flex' : 'none';
   });
+  if (!on) document.getElementById('e-reclamo-section').style.display = 'none';
 }
 function toggleEditReclamo() {
   const val = document.getElementById('e-tramite-ok').value;
