@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>EduAusencias · Carga de Docentes</title>
+<style>
+  body { font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 20px; background: #F7F6F2; }
+  .card { background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
+  h2 { color: #2D5FA1; margin-bottom: 8px; }
+  p { color: #666; margin-bottom: 24px; font-size: .92rem; }
+  button { background: #2D5FA1; color: #fff; border: none; padding: 14px 32px; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; }
+  button:hover { opacity: .88; }
+  .result { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: .9rem; display: none; }
+  .ok { background: #E8F5EE; color: #2A7A4B; }
+  .warn { background: #FEF9E7; color: #B8860B; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>📥 Carga masiva de docentes</h2>
+  <p>Este archivo carga los <strong>66 docentes</strong> del Excel directamente en EduAusencias.<br>
+  Abrilo en el <strong>mismo navegador</strong> donde usás la app.</p>
+  <button onclick="cargar()">Cargar docentes ahora</button>
+  <div class="result ok" id="res-ok"></div>
+  <div class="result warn" id="res-warn"></div>
+</div>
+
+<script>
+const DOCENTES_NUEVOS = [{"id": "p98kwcke", "apellido": "ALMIRÓN", "nombre": "Cristian", "cuil": "20-33837479-9", "nivel": "SECUNDARIO"}, {"id": "10ayycnl", "apellido": "ALONSO GAYOSO", "nombre": "María Leticia", "cuil": "27-38670907-1", "nivel": "SECUNDARIO"}, {"id": "rnhbxfg4", "apellido": "AMEND", "nombre": "Naiara Noemi", "cuil": "27-41261578-1", "nivel": "SECUNDARIO"}, {"id": "h4d6w4zq", "apellido": "ARIAUDO", "nombre": "Erika Mariana", "cuil": "27-26195592-5", "nivel": "SECUNDARIO"}, {"id": "tr8xvmx8", "apellido": "AYALA", "nombre": "Sofia", "cuil": "27-24550584-7", "nivel": "SECUNDARIO"}, {"id": "rd6zns95", "apellido": "BERRUTTI", "nombre": "MARIA BELEN", "cuil": "23-38993405-4", "nivel": "SECUNDARIO"}, {"id": "tki8c7lx", "apellido": "CABRAL", "nombre": "David Damian", "cuil": "20-34948420-0", "nivel": "SECUNDARIO"}, {"id": "z3beffqp", "apellido": "CAGGIANO", "nombre": "Patricia", "cuil": "27-22812253-5", "nivel": "SECUNDARIO"}, {"id": "wyjitfqz", "apellido": "CAPPELLI", "nombre": "Patricia Mabel", "cuil": "27-32723298-9", "nivel": "SECUNDARIO"}, {"id": "2v3bxv4j", "apellido": "CASALLEGNO", "nombre": "Diego Damián", "cuil": "20-29130736-2", "nivel": "SECUNDARIO"}, {"id": "32kgzgxs", "apellido": "CORONEL", "nombre": "Clara", "cuil": "27-28719160-5", "nivel": "SECUNDARIO"}, {"id": "2h673ka5", "apellido": "COUTINHO", "nombre": "Cristina", "cuil": "27-28353010-3", "nivel": "SECUNDARIO"}, {"id": "9fho9pex", "apellido": "CUEVAS", "nombre": "Miguel Angel", "cuil": "20-32993-803-5", "nivel": "SECUNDARIO"}, {"id": "yeomy55t", "apellido": "DEL MONTE", "nombre": "Marisa Estela", "cuil": "27-17199209-O", "nivel": "SECUNDARIO"}, {"id": "zkkhlsek", "apellido": "ESPINDOLA OCAMPO", "nombre": "Rosalba Marina", "cuil": "23-94681478-4", "nivel": "SECUNDARIO"}, {"id": "qbrmwwhq", "apellido": "FERNANDEZ", "nombre": "Mariela", "cuil": "27-25822600-9", "nivel": "SECUNDARIO"}, {"id": "e1isboow", "apellido": "GARCIA", "nombre": "Cecilia", "cuil": "23-32358239-4", "nivel": "SECUNDARIO"}, {"id": "pg851d8m", "apellido": "GARCIA", "nombre": "Diego Raúl", "cuil": "20-29735047-2", "nivel": "SECUNDARIO"}, {"id": "bbx16bmy", "apellido": "GUIGUET", "nombre": "Valeria", "cuil": "27-26440253-6", "nivel": "SECUNDARIO"}, {"id": "96zbn6xv", "apellido": "HOFFMANN", "nombre": "Natalia", "cuil": "27-28281080-3", "nivel": "SECUNDARIO"}, {"id": "16lxhf1g", "apellido": "HUESPE", "nombre": "Samanta", "cuil": "27-29421674-5", "nivel": "SECUNDARIO"}, {"id": "y4f01zoy", "apellido": "JIMENEZ", "nombre": "Lucia Fernanda", "cuil": "27-43736387-6", "nivel": "SECUNDARIO"}, {"id": "4i5dlyrg", "apellido": "JUAREZ", "nombre": "Ignacio Amaranto", "cuil": "20-35909722-1", "nivel": "SECUNDARIO"}, {"id": "7obs8hoc", "apellido": "LEDESMA", "nombre": "Yasmín Rocío Belén", "cuil": "27-33901076-0", "nivel": "SECUNDARIO"}, {"id": "3bjpdzbi", "apellido": "LEONI", "nombre": "Alejandro Gabriel", "cuil": "20-30455849-1", "nivel": "SECUNDARIO"}, {"id": "ekmqesp2", "apellido": "MAGARIÑOS", "nombre": "Claudina", "cuil": "27-24608659-7", "nivel": "SECUNDARIO"}, {"id": "s0ig2wpj", "apellido": "MAIDANA", "nombre": "Gabriela", "cuil": "27-36165117-6", "nivel": "SECUNDARIO"}, {"id": "vovm1vp0", "apellido": "MAMANI", "nombre": "Soledad Elizabeth", "cuil": "27-32028323-5", "nivel": "SECUNDARIO"}, {"id": "tl8crptd", "apellido": "MASTELLI", "nombre": "Constanza", "cuil": "27-25396414-1", "nivel": "SECUNDARIO"}, {"id": "87va4lmp", "apellido": "MELGAREJO COLMAN", "nombre": "Melisa", "cuil": "27-27588520-2", "nivel": "SECUNDARIO"}, {"id": "gc49kxti", "apellido": "MONTES DE OCA", "nombre": "Alejandro", "cuil": "20-21548434-4", "nivel": "SECUNDARIO"}, {"id": "hw9ap3l4", "apellido": "NIZ RAMIREZ", "nombre": "Daiana Soledad", "cuil": "27-34754677-7", "nivel": "SECUNDARIO"}, {"id": "ynpz7b6t", "apellido": "NUÑEZ", "nombre": "Maximiliano", "cuil": "20-30702409-9", "nivel": "SECUNDARIO"}, {"id": "yyem8clg", "apellido": "OLIVERA", "nombre": "Denise Mariana", "cuil": "27-39464260-1", "nivel": "SECUNDARIO"}, {"id": "seo4lbl3", "apellido": "PALACIOS", "nombre": "Jose", "cuil": "20-16929163-3", "nivel": "SECUNDARIO"}, {"id": "ntvertn5", "apellido": "PALAVECINO", "nombre": "Maria Laura", "cuil": "27-36075767-1", "nivel": "SECUNDARIO"}, {"id": "juvkz5nz", "apellido": "PAYASLIAN", "nombre": "Pablo Martin", "cuil": "20-26061432-1", "nivel": "SECUNDARIO"}, {"id": "7hlq41ug", "apellido": "PAZ", "nombre": "Jacqueline Roxana", "cuil": "23-36622389-4", "nivel": "SECUNDARIO"}, {"id": "62svzzyn", "apellido": "PEREYRA", "nombre": "Agustina", "cuil": "27-41882175-8", "nivel": "SECUNDARIO"}, {"id": "w2vf02lf", "apellido": "QUIROZ", "nombre": "Yessica", "cuil": "27-36241306-6", "nivel": "SECUNDARIO"}, {"id": "ha1jhd5n", "apellido": "RODRIGUEZ", "nombre": "Sol", "cuil": "27-31204064-1", "nivel": "SECUNDARIO"}, {"id": "7yntqbf9", "apellido": "RUIZ", "nombre": "Karen Elizabeth", "cuil": "27-38619217-6", "nivel": "SECUNDARIO"}, {"id": "tieh2qpo", "apellido": "SEQUEIRA BOEDO", "nombre": "Mabel Carolina", "cuil": "27-25024522-5", "nivel": "SECUNDARIO"}, {"id": "7vjo3nj6", "apellido": "SEQUEIRA", "nombre": "Lucia", "cuil": "27-31507299-4", "nivel": "SECUNDARIO"}, {"id": "7no76diw", "apellido": "SOTELO", "nombre": "Marina", "cuil": "27-37144497-7", "nivel": "SECUNDARIO"}, {"id": "8jomdv4x", "apellido": "SOTELO", "nombre": "Martin", "cuil": "20-42248920-8", "nivel": "SECUNDARIO"}, {"id": "2q28pusc", "apellido": "TORRES", "nombre": "Flavia", "cuil": "27-26009413-6", "nivel": "SECUNDARIO"}, {"id": "g1xheq68", "apellido": "URIZAR", "nombre": "Lidia", "cuil": "23-21666099-4", "nivel": "SECUNDARIO"}, {"id": "v64cl33r", "apellido": "VERDE", "nombre": "Sergio", "cuil": "20-24376000-4", "nivel": "SECUNDARIO"}, {"id": "0yutyy46", "apellido": "CASAGRANDE", "nombre": "Candela Belén", "cuil": "27-44792028-5", "nivel": "SECUNDARIO"}, {"id": "hjdthp0p", "apellido": "DE LOS ÁNGELES", "nombre": "Agustín Mario", "cuil": "23-32262983-4", "nivel": "PRIMARIO"}, {"id": "i10harug", "apellido": "Carabajal", "nombre": "María Laura", "cuil": "27-26692192-1", "nivel": "PRIMARIO"}, {"id": "bq9f8po8", "apellido": "Couchot", "nombre": "Nazareno", "cuil": "20-45584054-7", "nivel": "PRIMARIO"}, {"id": "swfb8qvd", "apellido": "Cuevas", "nombre": "Miguel Ángel", "cuil": "20-32983803-5", "nivel": "PRIMARIO/SECUNDARIO"}, {"id": "sd6j45g6", "apellido": "Fusco", "nombre": "María Fernanda", "cuil": "27-20404275-1", "nivel": "PRIMARIO/SECUNDARIO"}, {"id": "0ks2kr5j", "apellido": "Caballo", "nombre": "Mercedes", "cuil": "27-26581145-4", "nivel": "PRIMARIO"}, {"id": "ty7or3mm", "apellido": "Kulchik", "nombre": "Cecilia", "cuil": "27-25358841-7", "nivel": "PRIMARIO"}, {"id": "kawcotwp", "apellido": "Ledesma", "nombre": "Yasmín", "cuil": "27-33901016-0", "nivel": "PRIMARIO/SECUNDARIO"}, {"id": "3isof3o7", "apellido": "Mansilla", "nombre": "Pamela", "cuil": "27-38671333-8", "nivel": "PRIMARIO"}, {"id": "6a8l7eij", "apellido": "MERCADO", "nombre": "Érica", "cuil": "27-33778011-4", "nivel": "PRIMARIO"}, {"id": "kam8u7rg", "apellido": "Morales", "nombre": "Noelia", "cuil": "27-36685555-1", "nivel": "PRIMARIO"}, {"id": "isb09cp5", "apellido": "Morales", "nombre": "Liliana", "cuil": "27-25601940-5", "nivel": "PRIMARIO"}, {"id": "qu8vp6my", "apellido": "Morales", "nombre": "Romina", "cuil": "27-35137681-9", "nivel": "PRIMARIO"}, {"id": "f9adnuv2", "apellido": "Morales", "nombre": "Viviana", "cuil": "27-30455080-2", "nivel": "PRIMARIO"}, {"id": "w8mggj2i", "apellido": "Ostapchuk", "nombre": "Erika", "cuil": "27-36274818-1", "nivel": "PRIMARIO"}, {"id": "k0rp290u", "apellido": "Pintos", "nombre": "Leyla", "cuil": "27-38125764-4", "nivel": "PRIMARIO"}];
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz7Kowr8iroX8EutdJ3-eRkDUGCN-hmK815lJzfZaQsN5DKfHHxe59d4cdB35KUHj-OYA/exec';
+
+function cargar() {
+  // Leer DB actual del localStorage
+  const raw = localStorage.getItem('eduausencias_db');
+  const db = raw ? JSON.parse(raw) : { docentes: [], ausencias: [], suplencias: [] };
+  if (!db.docentes) db.docentes = [];
+
+  let agregados = 0;
+  let duplicados = 0;
+
+  DOCENTES_NUEVOS.forEach(d => {
+    const existe = db.docentes.find(x => x.cuil === d.cuil);
+    if (existe) {
+      duplicados++;
+    } else {
+      db.docentes.push(d);
+      agregados++;
+    }
+  });
+
+  // Guardar en localStorage
+  localStorage.setItem('eduausencias_db', JSON.stringify(db));
+
+  // Sincronizar con Drive/Sheets
+  if (WEB_APP_URL && !WEB_APP_URL.startsWith('PEGAR')) {
+    const encoded = encodeURIComponent(JSON.stringify(db));
+    fetch(WEB_APP_URL + '?action=save&data=' + encoded, { method: 'GET', mode: 'no-cors' })
+      .then(() => {
+        document.getElementById('res-warn').style.display = 'block';
+        document.getElementById('res-warn').textContent = '↑ Sincronizando con Google Sheets…';
+      });
+  }
+
+  document.getElementById('res-ok').style.display = 'block';
+  document.getElementById('res-ok').textContent = 
+    `✓ ${agregados} docentes cargados correctamente.${duplicados ? ' ' + duplicados + ' ya existían (omitidos).' : ''} Ya podés cerrar esta ventana y abrir EduAusencias.`;
+}
+</script>
+</body>
+</html>
