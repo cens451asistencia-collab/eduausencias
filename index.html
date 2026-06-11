@@ -397,6 +397,38 @@
         <label>CUIL</label>
         <div class="cuil-display" id="aus-cuil">—</div>
       </div>
+      <div class="field">
+        <label>Motivo de Ausencia</label>
+        <select id="aus-motivo" onchange="toggleOtrosMotivo()">
+          <option value="">— Seleccionar —</option>
+          <option>Causas particulares</option>
+          <option>Licencia médica personal</option>
+          <option>Licencia médica por familiar</option>
+          <option>Por examen</option>
+          <option>Salida educativa</option>
+          <option value="otras">Otras (especificar)</option>
+        </select>
+      </div>
+      <div class="field" id="field-motivo-otros" style="display:none">
+        <label>Especificar motivo</label>
+        <input type="text" id="aus-motivo-otros" placeholder="Describí el motivo…">
+      </div>
+      <div class="field">
+        <div class="toggle-row">
+          <input type="checkbox" id="aus-certificado">
+          <label for="aus-certificado">Envió certificado médico</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="subsection">
+      <div class="subsection-title">Observaciones</div>
+      <div class="form-grid cols1">
+        <div class="field">
+          <textarea id="aus-obs" placeholder="Anotaciones adicionales sobre esta ausencia…"></textarea>
+        </div>
+      </div>
     </div>
 
     <!-- Compensación -->
@@ -520,6 +552,8 @@
             <th>Docente</th>
             <th>CUIL</th>
             <th>Nivel</th>
+            <th>Motivo</th>
+            <th>Certif.</th>
             <th>Movimiento</th>
             <th>Estado Trámite</th>
             <th>Compensación</th>
@@ -961,6 +995,11 @@ function autoFillCuilSup(tipo, id) {
 // ──────────────────────────────────────────────
 //  AUSENCIAS
 // ──────────────────────────────────────────────
+function toggleOtrosMotivo() {
+  const val = v('aus-motivo');
+  document.getElementById('field-motivo-otros').style.display = val === 'otras' ? 'flex' : 'none';
+}
+
 function toggleMovimiento() {
   const on = document.getElementById('aus-genera-mov').checked;
   ['field-expediente','field-pago-tipo','field-tramite-ok','field-firma-inspector'].forEach(id => {
@@ -989,6 +1028,9 @@ function guardarAusencia() {
     id: uid(),
     nivel, fecha, docenteId,
     usuario: perfilActual ? perfilActual.nombre : '—',
+    motivo: v('aus-motivo') === 'otras' ? v('aus-motivo-otros') : v('aus-motivo'),
+    certificado: document.getElementById('aus-certificado').checked,
+    obs: v('aus-obs'),
     solicitaCompensar,
     fechaCompensa: solicitaCompensar ? v('aus-fecha-compensa') : '',
     compenso: solicitaCompensar ? document.getElementById('aus-compenso').checked : null,
@@ -1014,12 +1056,13 @@ function guardarAusencia() {
 
 function limpiarFormAusencia() {
   clearFields(['aus-nivel','aus-fecha','aus-docente','aus-expediente','aus-pago-tipo','aus-tramite-ok',
-    'aus-reclamo-titulo','aus-reclamo-fecha','aus-reclamo-expediente','aus-reclamo-ok','aus-fecha-compensa']);
+    'aus-reclamo-titulo','aus-reclamo-fecha','aus-reclamo-expediente','aus-reclamo-ok','aus-fecha-compensa',
+    'aus-motivo','aus-motivo-otros','aus-obs']);
   document.getElementById('aus-cuil').textContent = '—';
-  ['aus-genera-mov','aus-solicita-compensar','aus-compenso','aus-firma-inspector'].forEach(id => {
+  ['aus-genera-mov','aus-solicita-compensar','aus-compenso','aus-firma-inspector','aus-certificado'].forEach(id => {
     document.getElementById(id).checked = false;
   });
-  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa','field-firma-inspector'].forEach(id => {
+  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa','field-firma-inspector','field-motivo-otros'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('subsection-reclamo').style.display = 'none';
@@ -1064,6 +1107,8 @@ function renderAusencias() {
       <td><strong>${nombre}</strong></td>
       <td><span style="font-family:'DM Mono',monospace;font-size:.79rem">${cuil}</span></td>
       <td><span class="tag tag-nivel-${a.nivel.toLowerCase()}">${a.nivel}</span></td>
+      <td>${a.motivo ? `<span style="font-size:.82rem">${a.motivo}</span>` : '—'}</td>
+      <td>${a.certificado ? `<span class="tag tag-ok">✓ Sí</span>` : `<span class="tag tag-pendiente">No</span>`}</td>
       <td>${movTag}${a.expediente ? `<br><small style="color:var(--text3)">${a.expediente}</small>` : ''}</td>
       <td>${estadoTag}</td>
       <td>${compTag}</td>
