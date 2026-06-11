@@ -431,6 +431,42 @@
       </div>
     </div>
 
+    <!-- Suplente -->
+    <div class="subsection">
+      <div class="subsection-title">Suplente</div>
+      <div class="form-grid">
+        <div class="field">
+          <div class="toggle-row">
+            <input type="checkbox" id="aus-tiene-suplente" onchange="toggleAusSuplente()">
+            <label for="aus-tiene-suplente">Tiene suplente</label>
+          </div>
+        </div>
+      </div>
+      <div id="aus-suplente-fields" style="display:none">
+        <div class="form-grid" style="margin-top:10px">
+          <div class="field">
+            <label>Suplente</label>
+            <select id="aus-suplente-id" onchange="autoFillAusSuplente(this.value)">
+              <option value="">— Seleccionar —</option>
+              <option value="__externo__">✏️ Ingresar suplente externo…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>CUIL (suplente)</label>
+            <div class="cuil-display" id="aus-suplente-cuil">—</div>
+          </div>
+          <div class="field" id="field-aus-sup-ext-nombre" style="display:none">
+            <label>Nombre suplente externo</label>
+            <input type="text" id="aus-suplente-ext-nombre" placeholder="Apellido, Nombre">
+          </div>
+          <div class="field" id="field-aus-sup-ext-cuil" style="display:none">
+            <label>CUIL suplente externo</label>
+            <input type="text" id="aus-suplente-ext-cuil" placeholder="27-12345678-9" maxlength="13">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Compensación -->
     <div class="subsection">
       <div class="subsection-title">Compensación de Ausencia</div>
@@ -554,6 +590,7 @@
             <th>Nivel</th>
             <th>Motivo</th>
             <th>Certif.</th>
+            <th>Suplente</th>
             <th>Movimiento</th>
             <th>Estado Trámite</th>
             <th>Compensación</th>
@@ -965,7 +1002,11 @@ function populateDocSelects() {
     document.getElementById(id).innerHTML = optsBase;
   });
 
-  // Suplente: docentes + opción externo al final
+  // Suplente en ausencias: docentes + externo
+  document.getElementById('aus-suplente-id').innerHTML =
+    optsBase + '<option value="__externo__">✏️ Ingresar suplente externo…</option>';
+
+  // Suplente en suplencias: docentes + externo
   document.getElementById('sup-suplente').innerHTML =
     optsBase + '<option value="__externo__">✏️ Ingresar suplente externo…</option>';
 }
@@ -995,6 +1036,34 @@ function autoFillCuilSup(tipo, id) {
 // ──────────────────────────────────────────────
 //  AUSENCIAS
 // ──────────────────────────────────────────────
+function toggleAusSuplente() {
+  const on = document.getElementById('aus-tiene-suplente').checked;
+  document.getElementById('aus-suplente-fields').style.display = on ? 'block' : 'none';
+  if (!on) {
+    document.getElementById('aus-suplente-id').value = '';
+    document.getElementById('aus-suplente-cuil').textContent = '—';
+    document.getElementById('field-aus-sup-ext-nombre').style.display = 'none';
+    document.getElementById('field-aus-sup-ext-cuil').style.display = 'none';
+    document.getElementById('aus-suplente-ext-nombre').value = '';
+    document.getElementById('aus-suplente-ext-cuil').value = '';
+  }
+}
+
+function autoFillAusSuplente(id) {
+  if (id === '__externo__') {
+    document.getElementById('aus-suplente-cuil').textContent = '—';
+    document.getElementById('field-aus-sup-ext-nombre').style.display = 'flex';
+    document.getElementById('field-aus-sup-ext-cuil').style.display = 'flex';
+    return;
+  }
+  document.getElementById('field-aus-sup-ext-nombre').style.display = 'none';
+  document.getElementById('field-aus-sup-ext-cuil').style.display = 'none';
+  document.getElementById('aus-suplente-ext-nombre').value = '';
+  document.getElementById('aus-suplente-ext-cuil').value = '';
+  const d = DB.docentes.find(d => d.id === id);
+  document.getElementById('aus-suplente-cuil').textContent = d ? d.cuil : '—';
+}
+
 function toggleOtrosMotivo() {
   const val = v('aus-motivo');
   document.getElementById('field-motivo-otros').style.display = val === 'otras' ? 'flex' : 'none';
@@ -1031,6 +1100,10 @@ function guardarAusencia() {
     motivo: v('aus-motivo') === 'otras' ? v('aus-motivo-otros') : v('aus-motivo'),
     certificado: document.getElementById('aus-certificado').checked,
     obs: v('aus-obs'),
+    tieneSuplente: document.getElementById('aus-tiene-suplente').checked,
+    suplenteId: document.getElementById('aus-tiene-suplente').checked ? v('aus-suplente-id') : '',
+    suplenteExtNombre: document.getElementById('aus-tiene-suplente').checked && v('aus-suplente-id') === '__externo__' ? v('aus-suplente-ext-nombre') : '',
+    suplenteExtCuil: document.getElementById('aus-tiene-suplente').checked && v('aus-suplente-id') === '__externo__' ? v('aus-suplente-ext-cuil') : '',
     solicitaCompensar,
     fechaCompensa: solicitaCompensar ? v('aus-fecha-compensa') : '',
     compenso: solicitaCompensar ? document.getElementById('aus-compenso').checked : null,
@@ -1057,12 +1130,15 @@ function guardarAusencia() {
 function limpiarFormAusencia() {
   clearFields(['aus-nivel','aus-fecha','aus-docente','aus-expediente','aus-pago-tipo','aus-tramite-ok',
     'aus-reclamo-titulo','aus-reclamo-fecha','aus-reclamo-expediente','aus-reclamo-ok','aus-fecha-compensa',
-    'aus-motivo','aus-motivo-otros','aus-obs']);
+    'aus-motivo','aus-motivo-otros','aus-obs','aus-suplente-id','aus-suplente-ext-nombre','aus-suplente-ext-cuil']);
   document.getElementById('aus-cuil').textContent = '—';
-  ['aus-genera-mov','aus-solicita-compensar','aus-compenso','aus-firma-inspector','aus-certificado'].forEach(id => {
+  document.getElementById('aus-suplente-cuil').textContent = '—';
+  ['aus-genera-mov','aus-solicita-compensar','aus-compenso','aus-firma-inspector','aus-certificado','aus-tiene-suplente'].forEach(id => {
     document.getElementById(id).checked = false;
   });
-  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa','field-firma-inspector','field-motivo-otros'].forEach(id => {
+  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa',
+   'field-firma-inspector','field-motivo-otros','aus-suplente-fields',
+   'field-aus-sup-ext-nombre','field-aus-sup-ext-cuil'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('subsection-reclamo').style.display = 'none';
@@ -1109,6 +1185,14 @@ function renderAusencias() {
       <td><span class="tag tag-nivel-${a.nivel.toLowerCase()}">${a.nivel}</span></td>
       <td>${a.motivo ? `<span style="font-size:.82rem">${a.motivo}</span>` : '—'}</td>
       <td>${a.certificado ? `<span class="tag tag-ok">✓ Sí</span>` : `<span class="tag tag-pendiente">No</span>`}</td>
+      <td>${(() => {
+        if (!a.tieneSuplente) return '—';
+        if (a.suplenteId && a.suplenteId !== '__externo__') {
+          const ds = DB.docentes.find(d => d.id === a.suplenteId);
+          return ds ? `<span style="font-size:.82rem">${ds.apellido}, ${ds.nombre}</span>` : '—';
+        }
+        return a.suplenteExtNombre ? `<span style="font-size:.82rem">${a.suplenteExtNombre}</span><br><span class="tag tag-pendiente">Externo</span>` : '—';
+      })()}</td>
       <td>${movTag}${a.expediente ? `<br><small style="color:var(--text3)">${a.expediente}</small>` : ''}</td>
       <td>${estadoTag}</td>
       <td>${compTag}</td>
