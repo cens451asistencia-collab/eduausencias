@@ -1221,80 +1221,226 @@ function renderDashboard() {
 }
 
 // ──────────────────────────────────────────────
-//  EXCEL EXPORT
+//  EXCEL EXPORT — formato profesional
 // ──────────────────────────────────────────────
+const INST = {
+  nombre:    'Colegio Perito Moreno',
+  niveles:   'Nivel Inicial, Primario y Secundario',
+  direccion: 'Tomas Valle 5662 — González Catán',
+};
+
+// Colores institucionales
+const C = {
+  azul:       '2D5FA1',
+  azulClaro:  'EBF1FB',
+  grisHeader: 'F0EEE8',
+  borde:      'E2DDD4',
+  verde:      '2A7A4B',
+  verdeClaro: 'E8F5EE',
+  rojo:       'C0392B',
+  rojoClaro:  'FDECEA',
+  amarillo:   'B8860B',
+  amarClaro:  'FEF9E7',
+  blanco:     'FFFFFF',
+  negro:      '1A1A1A',
+};
+
+function estiloHeader() {
+  return {
+    font: { bold: true, color: { rgb: C.blanco }, sz: 11 },
+    fill: { fgColor: { rgb: C.azul } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: {
+      top:    { style: 'thin', color: { rgb: C.borde } },
+      bottom: { style: 'thin', color: { rgb: C.borde } },
+      left:   { style: 'thin', color: { rgb: C.borde } },
+      right:  { style: 'thin', color: { rgb: C.borde } },
+    }
+  };
+}
+
+function estiloCelda(bgRgb) {
+  return {
+    font: { sz: 10, color: { rgb: C.negro } },
+    fill: bgRgb ? { fgColor: { rgb: bgRgb } } : {},
+    alignment: { vertical: 'center', wrapText: false },
+    border: {
+      top:    { style: 'thin', color: { rgb: C.borde } },
+      bottom: { style: 'thin', color: { rgb: C.borde } },
+      left:   { style: 'thin', color: { rgb: C.borde } },
+      right:  { style: 'thin', color: { rgb: C.borde } },
+    }
+  };
+}
+
+function estiloTitulo() {
+  return {
+    font: { bold: true, sz: 14, color: { rgb: C.azul } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+}
+
+function estiloSubtitulo() {
+  return {
+    font: { sz: 10, color: { rgb: '555555' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+}
+
+function crearHojaFormateada(titulo, headers, colWidths, filas, colorFila) {
+  const ws = {};
+  const ncols = headers.length;
+  const FILA_TITULO = 0;
+  const FILA_SUB1   = 1;
+  const FILA_SUB2   = 2;
+  const FILA_FECHA  = 3;
+  const FILA_VACIA  = 4;
+  const FILA_HEADER = 5;
+  const FILA_DATOS  = 6;
+
+  const hoy = new Date();
+  const fechaStr = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+
+  // Función para poner celda
+  const put = (r, c, v, s) => {
+    const ref = XLSX.utils.encode_cell({ r, c });
+    ws[ref] = { v, t: typeof v === 'number' ? 'n' : 's', s };
+  };
+
+  // Encabezado institucional
+  put(FILA_TITULO, 0, INST.nombre,    estiloTitulo());
+  put(FILA_SUB1,  0, INST.niveles,    estiloSubtitulo());
+  put(FILA_SUB2,  0, INST.direccion,  estiloSubtitulo());
+  put(FILA_FECHA, 0, `Reporte: ${titulo} — Fecha de emisión: ${fechaStr}`, estiloSubtitulo());
+
+  // Merges para el encabezado
+  if (!ws['!merges']) ws['!merges'] = [];
+  [FILA_TITULO, FILA_SUB1, FILA_SUB2, FILA_FECHA].forEach(r => {
+    ws['!merges'].push({ s: { r, c: 0 }, e: { r, c: ncols - 1 } });
+  });
+  ws['!merges'].push({ s: { r: FILA_VACIA, c: 0 }, e: { r: FILA_VACIA, c: ncols - 1 } });
+
+  // Headers
+  headers.forEach((h, c) => put(FILA_HEADER, c, h, estiloHeader()));
+
+  // Datos
+  filas.forEach((fila, ri) => {
+    const bgFila = ri % 2 === 0 ? null : 'F7F6F2';
+    const bgOverride = colorFila ? colorFila(fila, ri) : null;
+    fila.forEach((val, c) => {
+      put(FILA_DATOS + ri, c, val ?? '', estiloCelda(bgOverride || bgFila));
+    });
+  });
+
+  // Ancho de columnas
+  ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+  // Alto de filas
+  ws['!rows'] = [
+    { hpt: 22 }, // título
+    { hpt: 16 }, // sub1
+    { hpt: 16 }, // sub2
+    { hpt: 14 }, // fecha
+    { hpt: 8  }, // vacía
+    { hpt: 30 }, // header
+    ...filas.map(() => ({ hpt: 18 }))
+  ];
+
+  ws['!ref'] = XLSX.utils.encode_range({
+    s: { r: 0, c: 0 },
+    e: { r: FILA_DATOS + Math.max(filas.length - 1, 0), c: ncols - 1 }
+  });
+
+  return ws;
+}
+
 function exportExcel() {
   const wb = XLSX.utils.book_new();
+  const hoy = new Date().toISOString().slice(0,10);
 
-  // Ausencias
-  const ausData = DB.ausencias.map(a => {
+  // ── AUSENCIAS ──
+  const ausHeaders = ['Fecha','Nivel','Apellido y Nombre','CUIL','Mov.','Expediente','Estado Trámite','Forma de Pago','Reclamo','Exp. Reclamo','Est. Reclamo','Compensa','Compensó','Fecha Comp.'];
+  const ausWidths  = [12, 12, 28, 18, 8, 18, 16, 14, 12, 18, 14, 10, 10, 12];
+  const ausFilas = DB.ausencias.sort((a,b) => b.fecha.localeCompare(a.fecha)).map(a => {
     const d = DB.docentes.find(d => d.id === a.docenteId);
-    return {
-      'Fecha': formatFecha(a.fecha),
-      'Nivel': a.nivel,
-      'Apellido y Nombre': d ? `${d.apellido}, ${d.nombre}` : 'N/A',
-      'CUIL': d?.cuil || '',
-      'Genera Movimiento': a.generaMovimiento ? 'Sí' : 'No',
-      'Expediente': a.expediente || '',
-      'Estado Trámite': a.tramiteOk === 'ok' ? 'OK' : a.tramiteOk === 'no' ? 'No vino' : 'Pendiente',
-      'Forma de Pago': a.pagoTipo || '',
-      'Reclamo Título': a.reclamo?.titulo || '',
-      'Reclamo Fecha': a.reclamo?.fecha ? formatFecha(a.reclamo.fecha) : '',
-      'Reclamo Expediente': a.reclamo?.expediente || '',
-      'Reclamo Estado': a.reclamo?.ok === 'ok' ? 'Resuelto' : a.reclamo?.ok === 'no' ? 'No resuelto' : '',
-      'Solicita Compensar': a.solicitaCompensar ? 'Sí' : 'No',
-      'Compensó': a.compenso === true ? 'Sí' : a.compenso === false ? 'No' : '',
-      'Fecha Compensación': a.fechaCompensa ? formatFecha(a.fechaCompensa) : ''
-    };
+    return [
+      formatFecha(a.fecha),
+      a.nivel,
+      d ? `${d.apellido}, ${d.nombre}` : 'N/A',
+      d?.cuil || '',
+      a.generaMovimiento ? 'Sí' : 'No',
+      a.expediente || '',
+      a.generaMovimiento ? (a.tramiteOk === 'ok' ? '✓ OK' : a.tramiteOk === 'no' ? '✗ No vino' : 'Pendiente') : '—',
+      a.pagoTipo || '',
+      a.reclamo?.titulo || '',
+      a.reclamo?.expediente || '',
+      a.reclamo?.ok === 'ok' ? '✓ Resuelto' : a.reclamo?.ok === 'no' ? '✗ No resuelto' : '',
+      a.solicitaCompensar ? 'Sí' : 'No',
+      a.compenso === true ? 'Sí' : a.compenso === false ? 'No' : '',
+      a.fechaCompensa ? formatFecha(a.fechaCompensa) : ''
+    ];
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ausData), 'Ausencias');
+  const ausColor = (fila) => {
+    if (fila[4] === 'Sí' && fila[6] === '✗ No vino') return C.rojoClaro;
+    if (fila[4] === 'Sí' && fila[6] === '✓ OK') return C.verdeClaro;
+    return null;
+  };
+  XLSX.utils.book_append_sheet(wb, crearHojaFormateada('Ausencias', ausHeaders, ausWidths, ausFilas, ausColor), 'Ausencias');
 
-  // Movimientos
-  const movData = DB.ausencias.filter(a => a.generaMovimiento).map(a => {
+  // ── MOVIMIENTOS ──
+  const movHeaders = ['Fecha','Nivel','Apellido y Nombre','CUIL','Expediente','Estado Trámite','Forma de Pago','Reclamo Título','Exp. Reclamo','Estado Reclamo'];
+  const movWidths  = [12, 12, 28, 18, 18, 16, 14, 14, 18, 16];
+  const movFilas = DB.ausencias.filter(a => a.generaMovimiento).sort((a,b) => b.fecha.localeCompare(a.fecha)).map(a => {
     const d = DB.docentes.find(d => d.id === a.docenteId);
-    return {
-      'Fecha': formatFecha(a.fecha),
-      'Nivel': a.nivel,
-      'Docente': d ? `${d.apellido}, ${d.nombre}` : 'N/A',
-      'CUIL': d?.cuil || '',
-      'Expediente': a.expediente || '',
-      'Estado': a.tramiteOk === 'ok' ? 'OK' : a.tramiteOk === 'no' ? 'No vino' : 'Pendiente',
-      'Pago': a.pagoTipo || '',
-      'Reclamo': a.reclamo?.titulo || '',
-      'Exp. Reclamo': a.reclamo?.expediente || '',
-      'Reclamo OK': a.reclamo?.ok === 'ok' ? 'Sí' : a.reclamo?.ok === 'no' ? 'No' : ''
-    };
+    return [
+      formatFecha(a.fecha),
+      a.nivel,
+      d ? `${d.apellido}, ${d.nombre}` : 'N/A',
+      d?.cuil || '',
+      a.expediente || '',
+      a.tramiteOk === 'ok' ? '✓ OK' : a.tramiteOk === 'no' ? '✗ No vino' : 'Pendiente',
+      a.pagoTipo || '',
+      a.reclamo?.titulo || '',
+      a.reclamo?.expediente || '',
+      a.reclamo?.ok === 'ok' ? '✓ Resuelto' : a.reclamo?.ok === 'no' ? '✗ No resuelto' : ''
+    ];
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movData), 'Movimientos');
+  const movColor = (fila) => {
+    if (fila[5] === '✗ No vino') return C.rojoClaro;
+    if (fila[5] === '✓ OK') return C.verdeClaro;
+    return null;
+  };
+  XLSX.utils.book_append_sheet(wb, crearHojaFormateada('Movimientos', movHeaders, movWidths, movFilas, movColor), 'Movimientos');
 
-  // Suplencias
-  const supData = DB.suplencias.map(s => {
+  // ── SUPLENCIAS ──
+  const supHeaders = ['Fecha','Nivel','Docente Ausente','CUIL Ausente','Suplente','CUIL Suplente','Forma de Pago','Observaciones'];
+  const supWidths  = [12, 12, 28, 18, 28, 18, 14, 30];
+  const supFilas = DB.suplencias.sort((a,b) => b.fecha.localeCompare(a.fecha)).map(s => {
     const da = DB.docentes.find(d => d.id === s.ausenteId);
     const ds = DB.docentes.find(d => d.id === s.suplenteId);
-    return {
-      'Fecha': formatFecha(s.fecha),
-      'Nivel': s.nivel,
-      'Docente Ausente': da ? `${da.apellido}, ${da.nombre}` : 'N/A',
-      'CUIL Ausente': da?.cuil || '',
-      'Suplente': ds ? `${ds.apellido}, ${ds.nombre}` : 'N/A',
-      'CUIL Suplente': ds?.cuil || '',
-      'Forma de Pago': s.pago || '',
-      'Observaciones': s.obs || ''
-    };
+    return [
+      formatFecha(s.fecha),
+      s.nivel,
+      da ? `${da.apellido}, ${da.nombre}` : 'N/A',
+      da?.cuil || '',
+      ds ? `${ds.apellido}, ${ds.nombre}` : 'N/A',
+      ds?.cuil || '',
+      s.pago || '',
+      s.obs || ''
+    ];
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(supData), 'Suplencias');
+  XLSX.utils.book_append_sheet(wb, crearHojaFormateada('Suplencias', supHeaders, supWidths, supFilas, null), 'Suplencias');
 
-  // Docentes
-  const docData = DB.docentes.map(d => ({
-    'Apellido': d.apellido,
-    'Nombre': d.nombre,
-    'CUIL': d.cuil,
-    'Nivel/es': d.nivel || '',
-    'Total Ausencias': DB.ausencias.filter(a => a.docenteId === d.id).length
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(docData), 'Docentes');
+  // ── DOCENTES ──
+  const docHeaders = ['Apellido','Nombre','CUIL','Nivel/es','Total Ausencias'];
+  const docWidths  = [22, 22, 18, 22, 16];
+  const docFilas = DB.docentes.map(d => [
+    d.apellido, d.nombre, d.cuil, d.nivel || '',
+    DB.ausencias.filter(a => a.docenteId === d.id).length
+  ]);
+  XLSX.utils.book_append_sheet(wb, crearHojaFormateada('Docentes', docHeaders, docWidths, docFilas, null), 'Docentes');
 
-  XLSX.writeFile(wb, `EduAusencias_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `PeritMoreno_Ausencias_${hoy}.xlsx`);
   toast('Excel exportado ✓');
 }
 
