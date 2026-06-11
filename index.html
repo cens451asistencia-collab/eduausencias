@@ -923,11 +923,17 @@ function eliminarDocente(id) {
 }
 
 function populateDocSelects() {
-  const opts = '<option value="">— Seleccionar —</option>' +
+  const optsBase = '<option value="">— Seleccionar —</option>' +
     DB.docentes.map(d => `<option value="${d.id}">${d.apellido}, ${d.nombre}</option>`).join('');
-  ['aus-docente','sup-ausente','sup-suplente'].forEach(id => {
-    document.getElementById(id).innerHTML = opts;
+
+  // Ausente y ausencias: solo docentes
+  ['aus-docente','sup-ausente'].forEach(id => {
+    document.getElementById(id).innerHTML = optsBase;
   });
+
+  // Suplente: docentes + opción externo al final
+  document.getElementById('sup-suplente').innerHTML =
+    optsBase + '<option value="__externo__">✏️ Ingresar suplente externo…</option>';
 }
 
 // ──────────────────────────────────────────────
