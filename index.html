@@ -239,14 +239,119 @@
     header { padding: 0 16px; }
     nav { padding: 0 10px; }
   }
+
+  /* ── PANTALLA DE PERFILES ── */
+  #perfil-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #1a2a4a 0%, #2D5FA1 60%, #1a3a6a 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 400; gap: 40px;
+  }
+  .perfil-logo {
+    text-align: center;
+  }
+  .perfil-logo h1 {
+    font-size: 2.2rem; font-weight: 700; color: #fff;
+    letter-spacing: -0.5px; margin-bottom: 4px;
+  }
+  .perfil-logo p {
+    color: rgba(255,255,255,0.6); font-size: .95rem;
+  }
+  .perfiles-grid {
+    display: flex; flex-wrap: wrap;
+    gap: 20px; justify-content: center;
+    max-width: 700px;
+  }
+  .perfil-card {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+    cursor: pointer;
+    transition: transform .2s, opacity .2s;
+  }
+  .perfil-card:hover { transform: translateY(-6px); }
+  .perfil-card:hover .perfil-avatar { box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+  .perfil-avatar {
+    width: 90px; height: 90px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.6rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transition: box-shadow .2s;
+    border: 3px solid transparent;
+  }
+  .perfil-card:hover .perfil-avatar {
+    border-color: rgba(255,255,255,0.5);
+  }
+  .perfil-nombre {
+    color: rgba(255,255,255,0.85);
+    font-size: .9rem; font-weight: 500;
+    letter-spacing: .02em;
+  }
+  .perfil-card:hover .perfil-nombre { color: #fff; }
+
+  /* Avatar colores */
+  .av-rosa    { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .av-celeste { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+  .av-verde   { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  .av-naranja { background: linear-gradient(135deg, #fa8231, #f7b733); }
+  .av-violeta { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+  .av-azul    { background: linear-gradient(135deg, #2D5FA1, #6dd5fa); }
+  .av-menta   { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+
+  /* Nombre usuario en header */
+  #perfil-activo {
+    font-size: .82rem; opacity: .75;
+    cursor: pointer; text-decoration: underline dotted;
+  }
+  #perfil-activo:hover { opacity: 1; }
 </style>
 </head>
 <body>
+
+<!-- PANTALLA DE PERFILES -->
+<div id="perfil-screen">
+  <div class="perfil-logo">
+    <h1>EduAusencias</h1>
+    <p>Colegio Perito Moreno · ¿Quién está usando la app?</p>
+  </div>
+  <div class="perfiles-grid">
+    <div class="perfil-card" onclick="elegirPerfil('Agostina','🌸','av-rosa')">
+      <div class="perfil-avatar av-rosa">🌸</div>
+      <div class="perfil-nombre">Agostina</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Rocío','🌺','av-celeste')">
+      <div class="perfil-avatar av-celeste">🌺</div>
+      <div class="perfil-nombre">Rocío</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Gabriela','⭐','av-naranja')">
+      <div class="perfil-avatar av-naranja">⭐</div>
+      <div class="perfil-nombre">Gabriela</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Micaela','🦋','av-violeta')">
+      <div class="perfil-avatar av-violeta">🦋</div>
+      <div class="perfil-nombre">Micaela</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Fernanda','🌻','av-verde')">
+      <div class="perfil-avatar av-verde">🌻</div>
+      <div class="perfil-nombre">Fernanda</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Pablo','🚀','av-azul')">
+      <div class="perfil-avatar av-azul">🚀</div>
+      <div class="perfil-nombre">Pablo</div>
+    </div>
+    <div class="perfil-card" onclick="elegirPerfil('Caro','🌈','av-menta')">
+      <div class="perfil-avatar av-menta">🌈</div>
+      <div class="perfil-nombre">Caro</div>
+    </div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>
   <div class="logo">EduAusencias <span>· Gestión Docente</span></div>
   <div class="header-right">
+    <span id="perfil-activo" onclick="volverPerfiles()" title="Cambiar perfil">👤 —</span>
     <span id="drive-status">●  Conectando…</span>
     <button class="btn-header" onclick="exportExcel()">⬇ Exportar Excel</button>
     <button class="btn-header" onclick="syncDrive()">↺ Sincronizar</button>
@@ -347,6 +452,12 @@
             <option value="no">✗ No vino</option>
           </select>
         </div>
+        <div class="field" id="field-firma-inspector" style="display:none">
+          <div class="toggle-row">
+            <input type="checkbox" id="aus-firma-inspector">
+            <label for="aus-firma-inspector">Lleva firma de inspector</label>
+          </div>
+        </div>
       </div>
 
       <!-- Reclamo -->
@@ -412,6 +523,7 @@
             <th>Movimiento</th>
             <th>Estado Trámite</th>
             <th>Compensación</th>
+            <th>Cargado por</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -445,6 +557,7 @@
             <th>Expediente</th>
             <th>Estado</th>
             <th>Pago</th>
+            <th>Firma Insp.</th>
             <th>Reclamo</th>
             <th>Acciones</th>
           </tr>
@@ -487,11 +600,21 @@
         <label>Docente suplente</label>
         <select id="sup-suplente" onchange="autoFillCuilSup('suplente', this.value)">
           <option value="">— Seleccionar —</option>
+          <option value="__externo__">✏️ Ingresar suplente externo…</option>
         </select>
       </div>
       <div class="field">
         <label>CUIL (suplente)</label>
         <div class="cuil-display" id="sup-cuil-suplente">—</div>
+      </div>
+      <!-- Suplente externo -->
+      <div class="field" id="field-sup-externo-nombre" style="display:none">
+        <label>Nombre del suplente externo</label>
+        <input type="text" id="sup-externo-nombre" placeholder="Apellido, Nombre">
+      </div>
+      <div class="field" id="field-sup-externo-cuil" style="display:none">
+        <label>CUIL del suplente externo</label>
+        <input type="text" id="sup-externo-cuil" placeholder="27-12345678-9" maxlength="13">
       </div>
       <div class="field">
         <label>Forma de pago</label>
@@ -533,6 +656,7 @@
             <th>Suplente</th>
             <th>Pago</th>
             <th>Observaciones</th>
+            <th>Cargado por</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -644,6 +768,34 @@ let DB = {
 };
 
 // ──────────────────────────────────────────────
+//  PERFILES
+// ──────────────────────────────────────────────
+let perfilActual = null;
+
+function elegirPerfil(nombre, emoji, color) {
+  perfilActual = { nombre, emoji, color };
+  sessionStorage.setItem('perfil', JSON.stringify(perfilActual));
+  document.getElementById('perfil-screen').style.display = 'none';
+  document.getElementById('perfil-activo').textContent = `${emoji} ${nombre}`;
+  toast(`¡Bienvenida/o, ${nombre}! 👋`);
+}
+
+function volverPerfiles() {
+  if (!confirm('¿Querés cambiar de perfil?')) return;
+  sessionStorage.removeItem('perfil');
+  document.getElementById('perfil-screen').style.display = 'flex';
+}
+
+function checkPerfil() {
+  const guardado = sessionStorage.getItem('perfil');
+  if (guardado) {
+    perfilActual = JSON.parse(guardado);
+    document.getElementById('perfil-screen').style.display = 'none';
+    document.getElementById('perfil-activo').textContent = `${perfilActual.emoji} ${perfilActual.nombre}`;
+  }
+}
+
+// ──────────────────────────────────────────────
 //  CONFIGURACIÓN — pegá acá tu Web App URL
 //  (Apps Script → Implementar → Web App → URL)
 // ──────────────────────────────────────────────
@@ -708,6 +860,7 @@ async function syncDrive() {
 
 // Al cargar la página
 window.addEventListener('load', () => {
+  checkPerfil();
   loadFromDrive();
 });
 
@@ -785,6 +938,16 @@ function autoFillCuil(id) {
   document.getElementById('aus-cuil').textContent = d ? d.cuil : '—';
 }
 function autoFillCuilSup(tipo, id) {
+  if (tipo === 'suplente' && id === '__externo__') {
+    document.getElementById('sup-cuil-suplente').textContent = '—';
+    document.getElementById('field-sup-externo-nombre').style.display = 'flex';
+    document.getElementById('field-sup-externo-cuil').style.display = 'flex';
+    return;
+  }
+  document.getElementById('field-sup-externo-nombre').style.display = 'none';
+  document.getElementById('field-sup-externo-cuil').style.display = 'none';
+  document.getElementById('sup-externo-nombre').value = '';
+  document.getElementById('sup-externo-cuil').value = '';
   const d = DB.docentes.find(d => d.id === id);
   document.getElementById(`sup-cuil-${tipo}`).textContent = d ? d.cuil : '—';
 }
@@ -794,7 +957,7 @@ function autoFillCuilSup(tipo, id) {
 // ──────────────────────────────────────────────
 function toggleMovimiento() {
   const on = document.getElementById('aus-genera-mov').checked;
-  ['field-expediente','field-pago-tipo','field-tramite-ok'].forEach(id => {
+  ['field-expediente','field-pago-tipo','field-tramite-ok','field-firma-inspector'].forEach(id => {
     document.getElementById(id).style.display = on ? 'flex' : 'none';
   });
   if (!on) document.getElementById('subsection-reclamo').style.display = 'none';
@@ -819,6 +982,7 @@ function guardarAusencia() {
   const aus = {
     id: uid(),
     nivel, fecha, docenteId,
+    usuario: perfilActual ? perfilActual.nombre : '—',
     solicitaCompensar,
     fechaCompensa: solicitaCompensar ? v('aus-fecha-compensa') : '',
     compenso: solicitaCompensar ? document.getElementById('aus-compenso').checked : null,
@@ -826,6 +990,7 @@ function guardarAusencia() {
     expediente: generaMov ? v('aus-expediente') : '',
     pagoTipo: generaMov ? v('aus-pago-tipo') : '',
     tramiteOk: generaMov ? v('aus-tramite-ok') : '',
+    firmaInspector: generaMov ? document.getElementById('aus-firma-inspector').checked : false,
     reclamo: generaMov && v('aus-tramite-ok') === 'no' ? {
       titulo: v('aus-reclamo-titulo') || 'Reclamo',
       fecha: v('aus-reclamo-fecha'),
@@ -845,10 +1010,10 @@ function limpiarFormAusencia() {
   clearFields(['aus-nivel','aus-fecha','aus-docente','aus-expediente','aus-pago-tipo','aus-tramite-ok',
     'aus-reclamo-titulo','aus-reclamo-fecha','aus-reclamo-expediente','aus-reclamo-ok','aus-fecha-compensa']);
   document.getElementById('aus-cuil').textContent = '—';
-  ['aus-genera-mov','aus-solicita-compensar','aus-compenso'].forEach(id => {
+  ['aus-genera-mov','aus-solicita-compensar','aus-compenso','aus-firma-inspector'].forEach(id => {
     document.getElementById(id).checked = false;
   });
-  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa'].forEach(id => {
+  ['field-expediente','field-pago-tipo','field-tramite-ok','field-compenso','field-fecha-compensa','field-firma-inspector'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('subsection-reclamo').style.display = 'none';
@@ -868,7 +1033,7 @@ function renderAusencias() {
 
   const tb = document.getElementById('tabla-ausencias');
   if (!rows.length) {
-    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📋</div><p>Sin ausencias registradas</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📋</div><p>Sin ausencias registradas</p></div></td></tr>`;
     return;
   }
   tb.innerHTML = rows.map(a => {
@@ -896,6 +1061,7 @@ function renderAusencias() {
       <td>${movTag}${a.expediente ? `<br><small style="color:var(--text3)">${a.expediente}</small>` : ''}</td>
       <td>${estadoTag}</td>
       <td>${compTag}</td>
+      <td><small style="color:var(--text3)">${a.usuario || '—'}</small></td>
       <td><div class="actions-cell">
         <button class="btn btn-secondary btn-sm" onclick="editarAusencia('${a.id}')">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarAusencia('${a.id}')">✕</button>
@@ -1101,6 +1267,7 @@ function renderMovimientos() {
       <td><span style="font-family:'DM Mono',monospace;font-size:.82rem">${a.expediente||'—'}</span></td>
       <td>${estadoTag}</td>
       <td>${a.pagoTipo ? `<span class="tag tag-ok">${a.pagoTipo}</span>` : '<span class="tag tag-pendiente">Pendiente</span>'}</td>
+      <td>${a.firmaInspector ? `<span class="tag tag-ok">✓ Sí</span>` : `<span class="tag tag-pendiente">No</span>`}</td>
       <td>${reclamoCol}</td>
       <td><button class="btn btn-secondary btn-sm" onclick="editarAusencia('${a.id}')">Editar</button></td>
     </tr>`;
@@ -1116,9 +1283,24 @@ function guardarSuplencia() {
   const ausenteId = v('sup-ausente');
   const suplenteId = v('sup-suplente');
   if (!nivel || !fecha || !ausenteId || !suplenteId) { toast('Completá todos los campos obligatorios'); return; }
+
+  let suplenteNombre = '';
+  let suplenteCuil = '';
+  const esExterno = suplenteId === '__externo__';
+
+  if (esExterno) {
+    suplenteNombre = v('sup-externo-nombre').trim();
+    suplenteCuil = v('sup-externo-cuil').trim();
+    if (!suplenteNombre || !suplenteCuil) { toast('Ingresá nombre y CUIL del suplente externo'); return; }
+  }
+
   DB.suplencias.push({
-    id: uid(), nivel, fecha, ausenteId, suplenteId,
-    pago: v('sup-pago'), obs: v('sup-obs')
+    id: uid(), nivel, fecha, ausenteId,
+    suplenteId: esExterno ? null : suplenteId,
+    suplenteExtNombre: esExterno ? suplenteNombre : '',
+    suplenteExtCuil: esExterno ? suplenteCuil : '',
+    pago: v('sup-pago'), obs: v('sup-obs'),
+    usuario: perfilActual ? perfilActual.nombre : '—'
   });
   limpiarFormSuplencia();
   renderSuplencias();
@@ -1127,9 +1309,11 @@ function guardarSuplencia() {
 }
 
 function limpiarFormSuplencia() {
-  clearFields(['sup-nivel','sup-fecha','sup-ausente','sup-suplente','sup-pago','sup-obs']);
+  clearFields(['sup-nivel','sup-fecha','sup-ausente','sup-suplente','sup-pago','sup-obs','sup-externo-nombre','sup-externo-cuil']);
   document.getElementById('sup-cuil-ausente').textContent = '—';
   document.getElementById('sup-cuil-suplente').textContent = '—';
+  document.getElementById('field-sup-externo-nombre').style.display = 'none';
+  document.getElementById('field-sup-externo-cuil').style.display = 'none';
 }
 
 function renderSuplencias() {
@@ -1144,14 +1328,14 @@ function renderSuplencias() {
 
   const tb = document.getElementById('tabla-suplencias');
   if (!rows.length) {
-    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔄</div><p>Sin suplencias registradas</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🔄</div><p>Sin suplencias registradas</p></div></td></tr>`;
     return;
   }
   tb.innerHTML = rows.map(s => {
     const da = DB.docentes.find(d => d.id === s.ausenteId);
-    const ds = DB.docentes.find(d => d.id === s.suplenteId);
+    const ds = s.suplenteId ? DB.docentes.find(d => d.id === s.suplenteId) : null;
     const nameA = da ? `${da.apellido}, ${da.nombre}` : 'N/A';
-    const nameS = ds ? `${ds.apellido}, ${ds.nombre}` : 'N/A';
+    const nameS = ds ? `${ds.apellido}, ${ds.nombre}` : s.suplenteExtNombre ? `${s.suplenteExtNombre} <span class="tag tag-pendiente">Externo</span>` : 'N/A';
     return `<tr>
       <td>${formatFecha(s.fecha)}</td>
       <td><span class="tag tag-nivel-${s.nivel.toLowerCase()}">${s.nivel}</span></td>
@@ -1159,6 +1343,7 @@ function renderSuplencias() {
       <td>${nameS}</td>
       <td>${s.pago ? `<span class="tag tag-ok">${s.pago}</span>` : '<span class="tag tag-pendiente">Pendiente</span>'}</td>
       <td>${s.obs||'—'}</td>
+      <td><small style="color:var(--text3)">${s.usuario || '—'}</small></td>
       <td><button class="btn btn-danger btn-sm" onclick="eliminarSuplencia('${s.id}')">✕</button></td>
     </tr>`;
   }).join('');
