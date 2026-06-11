@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduAusencias · Gestión Docente</title>
+<title>EduAusencias · Gestión Docente v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1637,7 +1637,11 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 function clearFields(ids) { ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); }
 function formatFecha(f) {
   if (!f) return '—';
-  const [y,m,d] = f.split('-');
+  // Si viene como ISO completo (ej: "2026-06-11T03:00:00.000Z"), tomar solo la parte de fecha
+  const str = String(f).split('T')[0];
+  const parts = str.split('-');
+  if (parts.length !== 3) return str;
+  const [y, m, d] = parts;
   return `${d}/${m}/${y}`;
 }
 function toast(msg) {
