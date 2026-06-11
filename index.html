@@ -646,19 +646,18 @@ let DB = {
 //  CONFIGURACIÓN — pegá acá tu Web App URL
 //  (Apps Script → Implementar → Web App → URL)
 // ──────────────────────────────────────────────
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz7Kowr8iroX8EutdJ3-eRkDUGCN-hmK815lJzfZaQsN5DKfHHxe59d4cdB35KUHj-OYA/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbya5rqbDnLrdFZw8ZZp24grvQz2kK7dpKeKi_HuWhYe1XEmSPD_HRhIgQyycBR5kOfZBA/exec';
 
 // ──────────────────────────────────────────────
 //  BACKEND: Apps Script Web App
 // ──────────────────────────────────────────────
 async function saveToDrive() {
-  saveLocal(); // guarda local siempre como fallback
+  saveLocal();
   if (!WEB_APP_URL || WEB_APP_URL.startsWith('PEGAR')) return;
   try {
-    await fetch(WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'save', data: DB })
-    });
+    const encoded = encodeURIComponent(JSON.stringify(DB));
+    const url = `${WEB_APP_URL}?action=save&data=${encoded}`;
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
     document.getElementById('drive-status').textContent = '●  Guardado en Sheets';
   } catch(e) {
     document.getElementById('drive-status').textContent = '●  Solo local';
