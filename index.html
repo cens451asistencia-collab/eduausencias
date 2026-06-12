@@ -384,8 +384,12 @@
         </select>
       </div>
       <div class="field">
-        <label>Fecha de Ausencia</label>
+        <label>Desde</label>
         <input type="date" id="aus-fecha">
+      </div>
+      <div class="field">
+        <label>Hasta <span style="color:var(--text3)">(opcional)</span></label>
+        <input type="date" id="aus-fecha-hasta">
       </div>
       <div class="field">
         <label>Docente</label>
@@ -654,8 +658,12 @@
         </select>
       </div>
       <div class="field">
-        <label>Fecha</label>
+        <label>Desde</label>
         <input type="date" id="sup-fecha">
+      </div>
+      <div class="field">
+        <label>Hasta <span style="color:var(--text3)">(opcional)</span></label>
+        <input type="date" id="sup-fecha-hasta">
       </div>
       <div class="field">
         <label>Docente que faltó</label>
@@ -1095,7 +1103,8 @@ function guardarAusencia() {
   const solicitaCompensar = document.getElementById('aus-solicita-compensar').checked;
   const aus = {
     id: uid(),
-    nivel, fecha, docenteId,
+    nivel, fecha, fechaHasta: v('aus-fecha-hasta'),
+    docenteId,
     usuario: perfilActual ? perfilActual.nombre : '—',
     motivo: v('aus-motivo') === 'otras' ? v('aus-motivo-otros') : v('aus-motivo'),
     certificado: document.getElementById('aus-certificado').checked,
@@ -1128,7 +1137,7 @@ function guardarAusencia() {
 }
 
 function limpiarFormAusencia() {
-  clearFields(['aus-nivel','aus-fecha','aus-docente','aus-expediente','aus-pago-tipo','aus-tramite-ok',
+  clearFields(['aus-nivel','aus-fecha','aus-fecha-hasta','aus-docente','aus-expediente','aus-pago-tipo','aus-tramite-ok',
     'aus-reclamo-titulo','aus-reclamo-fecha','aus-reclamo-expediente','aus-reclamo-ok','aus-fecha-compensa',
     'aus-motivo','aus-motivo-otros','aus-obs','aus-suplente-id','aus-suplente-ext-nombre','aus-suplente-ext-cuil']);
   document.getElementById('aus-cuil').textContent = '—';
@@ -1179,7 +1188,7 @@ function renderAusencias() {
       compTag = a.compenso ? `<span class="tag tag-compenso">✓ Compensó</span>` : `<span class="tag tag-no-compensa">Pendiente</span>`;
     } else compTag = '—';
     return `<tr>
-      <td>${formatFecha(a.fecha)}</td>
+      <td>${formatFecha(a.fecha)}${a.fechaHasta ? `<br><small style="color:var(--text3)">al ${formatFecha(a.fechaHasta)}</small>` : ''}</td>
       <td><strong>${nombre}</strong></td>
       <td><span style="font-family:'DM Mono',monospace;font-size:.79rem">${cuil}</span></td>
       <td><span class="tag tag-nivel-${a.nivel.toLowerCase()}">${a.nivel}</span></td>
@@ -1430,7 +1439,8 @@ function guardarSuplencia() {
   }
 
   DB.suplencias.push({
-    id: uid(), nivel, fecha, ausenteId,
+    id: uid(), nivel, fecha, fechaHasta: v('sup-fecha-hasta'),
+    ausenteId,
     suplenteId: esExterno ? null : suplenteId,
     suplenteExtNombre: esExterno ? suplenteNombre : '',
     suplenteExtCuil: esExterno ? suplenteCuil : '',
@@ -1444,7 +1454,7 @@ function guardarSuplencia() {
 }
 
 function limpiarFormSuplencia() {
-  clearFields(['sup-nivel','sup-fecha','sup-ausente','sup-suplente','sup-pago','sup-obs','sup-externo-nombre','sup-externo-cuil']);
+  clearFields(['sup-nivel','sup-fecha','sup-fecha-hasta','sup-ausente','sup-suplente','sup-pago','sup-obs','sup-externo-nombre','sup-externo-cuil']);
   document.getElementById('sup-cuil-ausente').textContent = '—';
   document.getElementById('sup-cuil-suplente').textContent = '—';
   document.getElementById('field-sup-externo-nombre').style.display = 'none';
@@ -1472,7 +1482,7 @@ function renderSuplencias() {
     const nameA = da ? `${da.apellido}, ${da.nombre}` : 'N/A';
     const nameS = ds ? `${ds.apellido}, ${ds.nombre}` : s.suplenteExtNombre ? `${s.suplenteExtNombre} <span class="tag tag-pendiente">Externo</span>` : 'N/A';
     return `<tr>
-      <td>${formatFecha(s.fecha)}</td>
+      <td>${formatFecha(s.fecha)}${s.fechaHasta ? `<br><small style="color:var(--text3)">al ${formatFecha(s.fechaHasta)}</small>` : ''}</td>
       <td><span class="tag tag-nivel-${s.nivel.toLowerCase()}">${s.nivel}</span></td>
       <td>${nameA}</td>
       <td>${nameS}</td>
