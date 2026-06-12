@@ -905,16 +905,17 @@ async function saveToDrive() {
 }
 
 async function loadFromDrive() {
-  loadLocal(); // carga local primero para que la app abra rápido
   if (!WEB_APP_URL || WEB_APP_URL.startsWith('PEGAR')) {
+    loadLocal();
     document.getElementById('drive-status').textContent = '●  Sin URL configurada';
     return;
   }
   try {
     document.getElementById('drive-status').textContent = '●  Cargando…';
-    const res = await fetch(WEB_APP_URL + '?action=load');
+    const res = await fetch(WEB_APP_URL + '?action=load&t=' + Date.now());
     const json = await res.json();
     if (json && json.docentes) {
+      // Limpiar localStorage y usar solo Drive
       DB = json;
       saveLocal();
       renderAll();
@@ -923,6 +924,8 @@ async function loadFromDrive() {
     }
     document.getElementById('drive-status').textContent = '●  Sheets conectado';
   } catch(e) {
+    // Solo si falla Drive, usar local
+    loadLocal();
     document.getElementById('drive-status').textContent = '●  Solo local';
   }
 }
