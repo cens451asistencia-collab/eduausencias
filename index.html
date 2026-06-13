@@ -365,6 +365,7 @@
   <button onclick="showTab('suplencias')">🔄 Suplencias Diarias</button>
   <button onclick="showTab('docentes')">👤 Docentes</button>
   <button onclick="showTab('dashboard')">📊 Resumen</button>
+  <button onclick="showTab('estadisticas')">📈 Estadísticas</button>
 </nav>
 
 <main>
@@ -824,6 +825,25 @@
   </div>
 </div>
 
+<!-- ══════════════════ ESTADÍSTICAS ══════════════════ -->
+<div id="tab-estadisticas" class="section">
+  <div class="card">
+    <div class="card-title">Estadísticas por Docente y Motivo</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+      <select id="stat-anio" onchange="renderEstadisticas()" style="width:120px">
+      </select>
+      <select id="stat-nivel" onchange="renderEstadisticas()" style="width:160px">
+        <option value="">Todos los niveles</option>
+        <option>Inicial</option>
+        <option>Primario</option>
+        <option>Secundario</option>
+      </select>
+      <span id="stat-total" style="font-size:.85rem;color:var(--text2);margin-left:auto"></span>
+    </div>
+    <div class="table-wrap" id="tabla-estadisticas-wrap"></div>
+  </div>
+</div>
+
 </main>
 
 <!-- MODAL EDITAR AUSENCIA -->
@@ -958,9 +978,10 @@ function showTab(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
-  const tabs = ['ausencias','movimientos','suplencias','docentes','dashboard'];
+  const tabs = ['ausencias','movimientos','suplencias','docentes','dashboard','estadisticas'];
   document.querySelectorAll('#main-nav button')[tabs.indexOf(id)].classList.add('active');
   if (id === 'dashboard') renderDashboard();
+  if (id === 'estadisticas') renderEstadisticas();
 }
 
 // ──────────────────────────────────────────────
@@ -1789,6 +1810,146 @@ function exportExcel() {
 
   XLSX.writeFile(wb, `PeritMoreno_Ausencias_${hoy}.xlsx`);
   toast('Excel exportado ✓');
+}
+
+
+// ──────────────────────────────────────────────
+//  ESTADÍSTICAS POR DOCENTE Y MOTIVO
+// ──────────────────────────────────────────────
+const MOTIVOS_ORDEN = [
+  'Causas particulares',
+  'Licencia médica personal',
+  'Licencia médica por familiar',
+  'Por examen',
+  'Salida educativa',
+  'Otras / Sin especificar'
+];
+
+function diasEntre(desde, hasta) {
+  if (!desde) return 1;
+  const d1 = new Date(desde + 'T00:00:00');
+  const d2 = hasta ? new Date(hasta + 'T00:00:00') : d1;
+  const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+  return diff > 0 ? diff : 1;
+}
+
+function normalizarMotivo(m) {
+  if (!m) return 'Otras / Sin especificar';
+  const mot = m.trim();
+  if (MOTIVOS_ORDEN.includes(mot)) return mot;
+  return 'Otras / Sin especificar';
+}
+
+function poblarAnios() {
+  const sel = document.getElementById('stat-anio');
+  const anios = [...new Set(DB.ausencias.map(a => {
+    const f = String(a.fecha).split('T')[0];
+    return f.split('-')[0];
+  }).filter(Boolean))].sort().reverse();
+  
+  const anioActual = new Date().getFullYear().toString();
+  if (!anios.includes(anioActual)) anios.unshift(anioActual);
+  
+  const valActual = sel.value;
+  sel.innerHTML = anios.map(a => `<option value="${a}" ${a === (valActual || anioActual) ? 'selected' : ''}>${a}</option>`).join('');
+}
+
+function renderEstadisticas() {
+  poblarAnios();
+  const anio = document.getElementById('stat-anio').value;
+  const nivel = document.getElementById('stat-nivel').value;
+
+  // Filtrar ausencias del año y nivel
+  const ausencias = DB.ausencias.filter(a => {
+    const f = String(a.fecha).split('T')[0];
+    const anioAus = f.split('-')[0];
+    return anioAus === anio && (!nivel || a.nivel === nivel);
+  });
+
+  if (!ausencias.length) {
+    document.getElementById('tabla-estadisticas-wrap').innerHTML =
+      `<div class="empty-state"><div class="icon">📈</div><p>Sin ausencias registradas para ${anio}</p></div>`;
+    document.getElementById('stat-total').textContent = '';
+    return;
+  }
+
+  // Construir mapa: docenteId → { motivo → días }
+  const mapa = {};
+  let totalDias = 0;
+
+  ausencias.forEach(a => {
+    const dias = diasEntre(String(a.fecha).split('T')[0], a.fechaHasta ? String(a.fechaHasta).split('T')[0] : null);
+    const motivo = normalizarMotivo(a.motivo);
+    if (!mapa[a.docenteId]) mapa[a.docenteId] = {};
+    mapa[a.docenteId][motivo] = (mapa[a.docenteId][motivo] || 0) + dias;
+    totalDias += dias;
+  });
+
+  // Solo motivos que tienen al menos 1 día
+  const motivosUsados = MOTIVOS_ORDEN.filter(m =>
+    Object.values(mapa).some(d => d[m])
+  );
+
+  // Ordenar docentes por total de días desc
+  const docOrdenados = Object.keys(mapa).sort((a, b) => {
+    const totalA = Object.values(mapa[a]).reduce((s, v) => s + v, 0);
+    const totalB = Object.values(mapa[b]).reduce((s, v) => s + v, 0);
+    return totalB - totalA;
+  });
+
+  // Construir tabla
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:.83rem">
+    <thead>
+      <tr>
+        <th style="background:var(--accent);color:#fff;padding:10px 12px;text-align:left;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;position:sticky;left:0;z-index:1">Docente</th>
+        <th style="background:var(--accent);color:#fff;padding:10px 12px;text-align:left;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase">Nivel</th>
+        ${motivosUsados.map(m => `
+        <th style="background:var(--accent);color:#fff;padding:10px 8px;text-align:center;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;max-width:100px;white-space:normal;line-height:1.3">${m}</th>`).join('')}
+        <th style="background:#1a3a6a;color:#fff;padding:10px 12px;text-align:center;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  docOrdenados.forEach((docId, i) => {
+    const d = DB.docentes.find(d => d.id === docId);
+    const nombre = d ? `${d.apellido}, ${d.nombre}` : 'N/A';
+    const nivelDoc = d?.nivel || '—';
+    const totalDoc = Object.values(mapa[docId]).reduce((s, v) => s + v, 0);
+    const bg = i % 2 === 0 ? '' : 'background:var(--surface2)';
+
+    html += `<tr style="${bg}">
+      <td style="padding:10px 12px;font-weight:600;border-bottom:1px solid var(--border);position:sticky;left:0;background:${i % 2 === 0 ? 'white' : 'var(--surface2)'}">${nombre}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><span class="tag tag-nivel-${nivelDoc.toLowerCase().split('/')[0].trim()}">${nivelDoc}</span></td>
+      ${motivosUsados.map(m => {
+        const dias = mapa[docId][m] || 0;
+        const color = dias > 0
+          ? dias >= 15 ? 'background:var(--red-light);color:var(--red);font-weight:700'
+          : dias >= 7  ? 'background:var(--yellow-light);color:var(--yellow);font-weight:600'
+          : 'background:var(--accent-light);color:var(--accent)'
+          : 'color:var(--text3)';
+        return `<td style="padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)">
+          <span style="display:inline-block;min-width:28px;padding:3px 8px;border-radius:20px;font-size:.82rem;${dias > 0 ? color : ''}">${dias > 0 ? dias : '—'}</span>
+        </td>`;
+      }).join('')}
+      <td style="padding:10px 12px;text-align:center;border-bottom:1px solid var(--border);font-weight:700;font-family:'DM Mono',monospace;font-size:.9rem;color:var(--accent)">${totalDoc}</td>
+    </tr>`;
+  });
+
+  // Fila de totales
+  html += `<tr style="background:var(--surface2);font-weight:700">
+    <td style="padding:10px 12px;border-top:2px solid var(--border);position:sticky;left:0;background:var(--surface2)">TOTAL</td>
+    <td style="padding:10px 12px;border-top:2px solid var(--border)"></td>
+    ${motivosUsados.map(m => {
+      const sum = Object.values(mapa).reduce((s, d) => s + (d[m] || 0), 0);
+      return `<td style="padding:10px 8px;text-align:center;border-top:2px solid var(--border);font-family:'DM Mono',monospace">${sum > 0 ? sum : '—'}</td>`;
+    }).join('')}
+    <td style="padding:10px 12px;text-align:center;border-top:2px solid var(--border);font-family:'DM Mono',monospace;color:var(--accent);font-size:1rem">${totalDias}</td>
+  </tr>`;
+
+  html += '</tbody></table>';
+
+  document.getElementById('tabla-estadisticas-wrap').innerHTML = html;
+  document.getElementById('stat-total').textContent = `${docOrdenados.length} docentes · ${totalDias} días totales en ${anio}`;
 }
 
 // ──────────────────────────────────────────────
