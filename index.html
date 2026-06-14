@@ -1024,6 +1024,19 @@ const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz7Kowr8iroX8EutdJ3
 // ──────────────────────────────────────────────
 //  BACKEND: Apps Script Web App
 // ──────────────────────────────────────────────
+async function saveDocentesDrive() {
+  saveLocal();
+  if (!WEB_APP_URL || WEB_APP_URL.startsWith('PEGAR')) return;
+  try {
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveDocentes', data: DB })
+    });
+  } catch(e) { console.log('Error guardando docentes:', e); }
+}
+
 async function saveToDrive() {
   saveLocal();
   if (!WEB_APP_URL || WEB_APP_URL.startsWith('PEGAR')) return;
@@ -1115,7 +1128,7 @@ function guardarDocente() {
   clearFields(['doc-apellido','doc-nombre','doc-cuil','doc-nivel','doc-telefono']);
   renderDocentes();
   populateDocSelects();
-  saveToDrive();
+  saveDocentesDrive();
   toast('Docente agregado ✓');
 }
 
@@ -1152,7 +1165,7 @@ function eliminarDocente(id) {
   DB.docentes = DB.docentes.filter(d => d.id !== id);
   renderDocentes();
   populateDocSelects();
-  saveToDrive();
+  saveDocentesDrive();
   toast('Docente eliminado');
 }
 
@@ -1962,7 +1975,7 @@ function guardarEdicionDocente(id) {
   closeModal('modal-doc');
   renderDocentes();
   populateDocSelects();
-  saveToDrive();
+  saveDocentesDrive();
   toast('Docente actualizado ✓');
 }
 
