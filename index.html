@@ -928,6 +928,40 @@
 
 </main>
 
+<!-- MODAL EDITAR DOCENTE -->
+<div class="modal-overlay" id="modal-doc">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-doc')">✕</button>
+    <div class="modal-title">Editar Docente</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Apellido</label>
+        <input type="text" id="edit-doc-apellido">
+      </div>
+      <div class="field">
+        <label>Nombre</label>
+        <input type="text" id="edit-doc-nombre">
+      </div>
+      <div class="field">
+        <label>CUIL</label>
+        <input type="text" id="edit-doc-cuil" maxlength="13">
+      </div>
+      <div class="field">
+        <label>Nivel/es</label>
+        <input type="text" id="edit-doc-nivel">
+      </div>
+      <div class="field full">
+        <label>Teléfono / WhatsApp</label>
+        <input type="text" id="edit-doc-telefono" placeholder="1112345678" maxlength="15">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-guardar-doc-edit">Guardar cambios</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-doc')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EDITAR AUSENCIA -->
 <div class="modal-overlay" id="modal-aus">
   <div class="modal">
@@ -991,8 +1025,16 @@ const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbya5rqbDnLrdFZw8ZZp
 //  BACKEND: Apps Script Web App
 // ──────────────────────────────────────────────
 async function saveDocentesDrive() {
-  // Los docentes se gestionan directo en Sheets — no se escriben desde la app
   saveLocal();
+  if (!WEB_APP_URL || WEB_APP_URL.startsWith('PEGAR')) return;
+  try {
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveDocentes', data: DB })
+    });
+  } catch(e) { console.log('Error guardando docentes:', e); }
 }
 
 async function saveToDrive() {
@@ -1111,6 +1153,7 @@ function renderDocentes() {
       <td>${waBtn}</td>
       <td>${cant}</td>
       <td><div class="actions-cell">
+        <button class="btn btn-secondary btn-sm" onclick="editarDocente('${d.id}')">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarDocente('${d.id}')">Eliminar</button>
       </div></td>
     </tr>`;
@@ -1901,6 +1944,40 @@ function exportExcel() {
 
 
 
+
+// ──────────────────────────────────────────────
+//  EDITAR DOCENTE
+// ──────────────────────────────────────────────
+function editarDocente(id) {
+  const d = DB.docentes.find(d => d.id === id);
+  if (!d) return;
+  document.getElementById('edit-doc-apellido').value  = d.apellido || '';
+  document.getElementById('edit-doc-nombre').value    = d.nombre   || '';
+  document.getElementById('edit-doc-cuil').value      = d.cuil     || '';
+  document.getElementById('edit-doc-nivel').value     = d.nivel    || '';
+  document.getElementById('edit-doc-telefono').value  = d.telefono ? String(d.telefono) : '';
+  document.getElementById('btn-guardar-doc-edit').onclick = () => guardarEdicionDocente(id);
+  openModal('modal-doc');
+}
+
+function guardarEdicionDocente(id) {
+  const d = DB.docentes.find(d => d.id === id);
+  if (!d) return;
+  const apellido = document.getElementById('edit-doc-apellido').value.trim();
+  const nombre   = document.getElementById('edit-doc-nombre').value.trim();
+  const cuil     = document.getElementById('edit-doc-cuil').value.trim();
+  if (!apellido || !nombre || !cuil) { toast('Completá apellido, nombre y CUIL'); return; }
+  d.apellido = apellido;
+  d.nombre   = nombre;
+  d.cuil     = cuil;
+  d.nivel    = document.getElementById('edit-doc-nivel').value.trim();
+  d.telefono = document.getElementById('edit-doc-telefono').value.trim().replace(/[^0-9]/g,'');
+  closeModal('modal-doc');
+  renderDocentes();
+  populateDocSelects();
+  saveDocentesDrive();
+  toast('Docente actualizado ✓');
+}
 
 // ──────────────────────────────────────────────
 //  BÚSQUEDA GLOBAL
